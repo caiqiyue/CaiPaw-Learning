@@ -1,0 +1,133 @@
+{
+  "project": "CaiPaw-Learning",
+  "schema_version": 1,
+  "updated": "2026-09-10",
+
+  "rules": {
+    "single_active_feature": true,
+    "wip_limit": 1,
+    "说明": "全局同时只能有一个 status = in_progress 的 feature。这条由 hooks 与本文件的检查共同保证。",
+    "只填当前批次": "后续批次（阶段 B/C/D）不要提前写进本文件 —— 写进来就会诱使提前动手。外层地图见 docs/任务清单-粗粒度.md。",
+    "status_取值": {
+      "pending": "还没开始",
+      "in_progress": "正在做（全局唯一）",
+      "passing": "已通过 DoD 五条，evidence 必须非空",
+      "partial": "跑通了但 DoD 没全过（通常是缺笔记），必须在 evidence 里写清差哪一条",
+      "blocked": "卡住了，必须在 claude-progress.md 写明卡在哪",
+      "skipped": "主动跳过，必须写清为什么（一般不允许）"
+    },
+    "definition_of_done": [
+      "1. 目标行为已实现",
+      "2. 验证真的跑过（./init.sh 通过 + 本行 verification 逐条执行）",
+      "3. 本行 evidence 非空",
+      "4. ★ 学习笔记已写（learning-notes/step-NNN-*.md，含认知落差与自测结果）",
+      "5. 仓库仍能从 ./init.sh 重启，不需要手动修"
+    ],
+    "verification_写法": "3~6 步，每步是可复制粘贴执行的命令或可肉眼观察的现象。不要写「测试通过」这种不可执行的描述。",
+    "note_命名": "learning-notes/step-NNN-<slug>.md，NNN 全局三位连续递增，跨任务不重新计数。",
+    "硬约束": "见 AGENTS.md §1（学习纪律 L1~L6 + 工程纪律 E1~E11）。规则冲突时以 AGENTS.md 为准。"
+  },
+
+  "milestone": {
+    "当前阶段": "阶段 A",
+    "当前外层模块": "M01",
+    "外层模块清单": "docs/任务清单-粗粒度.md",
+    "内层进度目录": "docs/进度/"
+  },
+
+  "features": [
+    {
+      "id": "a01",
+      "module": "M01",
+      "priority": 1,
+      "area": "agent",
+      "title": "调通第一次 LLM 调用",
+      "status": "pending",
+      "user_visible_behavior": "运行脚本后，终端打印出模型返回的一段文本",
+      "qwenpaw_reference": "Model / Formatter（先读这个再动手，见 L6）",
+      "verification": [
+        "在 agent-service/ 下运行 python -m agent.demo --ask '你好'",
+        "终端打印出模型返回的一段文本（非空、非报错栈）",
+        "运行 ruff check . 与 mypy .，无报错",
+        "运行 python -m pytest -q，通过的用例数 >= 1"
+      ],
+      "evidence": "",
+      "note": ""
+    },
+    {
+      "id": "a02",
+      "module": "M01",
+      "priority": 2,
+      "area": "agent",
+      "title": "用 LangChain 抽象替换裸调用",
+      "status": "pending",
+      "user_visible_behavior": "换模型时只改一行配置，脚本行为不变",
+      "qwenpaw_reference": "AgentBuilder（极简版）—— 看它怎么把模型装配进来",
+      "verification": [
+        "把配置里的模型名改成另一个（外部 API ↔ 本地 vLLM 目录）",
+        "重跑 python -m agent.demo --ask '你好'，行为与 a01 一致",
+        "全程没有改动任何 .py 文件（只改配置）",
+        "运行 python -m pytest -q，全过"
+      ],
+      "evidence": "",
+      "note": ""
+    },
+    {
+      "id": "a03",
+      "module": "M02",
+      "priority": 3,
+      "area": "tools",
+      "title": "加第一个工具并让模型请求调用",
+      "status": "pending",
+      "user_visible_behavior": "提问「3 乘 7 等于几」时，终端显示模型先请求调用计算器工具",
+      "qwenpaw_reference": "Tools —— 看它的工具注册与 schema 生成方式",
+      "verification": [
+        "在终端运行 python -m agent.demo --ask '3 乘 7 等于几'",
+        "观察输出中出现工具调用记录（工具名 + 入参）",
+        "观察工具返回值被回灌给模型",
+        "确认最终输出为 21",
+        "运行 python -m pytest -q，新增的工具单测通过"
+      ],
+      "evidence": "",
+      "note": ""
+    },
+    {
+      "id": "a04",
+      "module": "M03",
+      "priority": 4,
+      "area": "agent",
+      "title": "手写 ReAct 循环",
+      "status": "pending",
+      "user_visible_behavior": "提问需要多步的问题时，终端能看到「思考→调工具→回灌→再思考」多轮循环",
+      "qwenpaw_reference": "QwenPawAgent 的 Loop —— 看它的终止条件怎么写的",
+      "verification": [
+        "运行 python -m agent.demo --ask '先算 3 乘 7，再算结果加 5'",
+        "观察终端出现 >= 2 轮「思考→工具调用→回灌」",
+        "观察循环在得到最终答案后停止（不是固定轮数）",
+        "构造一个无解问题，确认循环能因达到上限而退出而不是死循环",
+        "运行 python -m pytest -q，循环控制逻辑的单测通过"
+      ],
+      "evidence": "",
+      "note": ""
+    },
+    {
+      "id": "a05",
+      "module": "M03",
+      "priority": 5,
+      "area": "graph",
+      "title": "改写成 LangGraph 图",
+      "status": "pending",
+      "user_visible_behavior": "同样的输入，行为与 a04 一致，但循环由 StateGraph 驱动",
+      "qwenpaw_reference": "AgentBuilder + Loop —— 对照它手写循环的终止条件与我们图里的条件边",
+      "verification": [
+        "用与 a04 完全相同的输入运行 python -m agent.demo --ask '先算 3 乘 7，再算结果加 5'",
+        "最终答案与 a04 一致",
+        "终端打印出图节点执行序列，可见 条件边 在「继续循环」与「结束」之间切换",
+        "运行 python -m pytest -q，全过",
+        "笔记里写出：a04 手写循环与 a05 图驱动循环的关键差异"
+      ],
+      "evidence": "",
+      "note": ""
+    }
+  ]
+}

@@ -1,0 +1,308 @@
+# ============================================================
+# CaiPaw-Learning — .gitignore
+# ============================================================
+# 2026-09-10 定稿：技术栈已确定，本文件**按子系统分组**重写。
+#
+# 为什么按子系统分组：本项目是**两套完全不同的系统**，产物也完全不同——
+#   · 子系统 ①  agent-service/      Python 3.11 + FastAPI + LangGraph
+#   · 子系统 ②  business-service/   JDK 17 + SpringBoot + MyBatis + Maven
+#   · 子系统 ②  web/                Vue 3 + Vite + TypeScript（pnpm）
+#   · 部署       deploy/            Docker / docker-compose
+# 混在一起写，会让人误以为「这些都得管」；实际上 Python 的产物在 Java 那边
+# 根本不会出现，Java 的产物在 Python 那边也不会。
+#
+# 三条不可违反的原则（与 docs/服务器运维手册.md §4 一致）：
+#   1. 密钥 / token / 私钥 一律不入库
+#   2. 模型权重 / 数据集 / 缓存 / 日志 一律不入库
+#   3. 一次性草稿（handoff、scope-brief）一律不入库
+#
+# git 语义提醒（踩过坑）：
+#   · 父目录被排除时，对其子文件的 `!` 放行**无效**。
+#     需要占位文件时用 `dir/*` + `!dir/.gitkeep`，不要用 `dir/`。
+#   · 规则顺序 = 匹配顺序，**后面的覆盖前面的**。
+#     所以每个分组内：先写忽略、再写放行（例：先 `*.jar` 再 `!**/mvnw`）。
+# ============================================================
+
+
+# ============================================================
+# 第 0 段 · 两套子系统共用
+# ============================================================
+
+# ---- 0.1 密钥 / 凭据 / 本地环境变量（最高优先级）----
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.jks
+secrets/
+.secrets/
+credentials.json
+service-account*.json
+*.kubeconfig
+kubeconfig
+
+# ---- 0.2 操作系统 ----
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+*.lnk
+nul
+
+# ---- 0.3 编辑器 / IDE ----
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+.history/
+
+# ---- 0.4 构建产物通用名 ----
+# Python 的 sdist 与 Node 的打包输出都叫 dist/，所以放共用段。
+dist/
+build/
+
+# ---- 0.5 日志 ----
+logs/
+*.log
+*.out
+
+
+# ============================================================
+# 第 1 段 · 子系统 ① agent-service/（Python 3.11 + FastAPI + LangGraph）
+# ============================================================
+
+# ---- 1.1 字节码 / 包元数据 ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+*.egg
+MANIFEST
+
+# ---- 1.2 虚拟环境 ----
+# ⚠️ 本项目用 conda env `caipaw-agent`，它建在 conda 目录下、**不在仓库内**。
+#    这几条是防「有人手贱在仓库里建 venv」。
+.venv/
+venv/
+env/
+ENV/
+
+# ---- 1.3 Python 工具缓存 ----
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.dmypy.json
+.pyre/
+.tox/
+.nox/
+.hypothesis/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# ---- 1.4 Jupyter（临时做实验可以，产物不入库）----
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+
+# ============================================================
+# 第 2 段 · 子系统 ② business-service/（JDK 17 + SpringBoot + Maven）
+# ============================================================
+
+# ---- 2.1 Maven 构建产物 ----
+target/
+*.class
+*.jar
+*.war
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+
+# ---- 2.2 ★ Maven Wrapper 必须入库（放行）----
+# 见 docs/harness机制_CaiPaw-Learning.md §0.2：用 `./mvnw`，不依赖全局 mvn。
+# ⚠️ 这几条**必须在 2.1 的 `*.jar` 之后**才会生效（顺序 = 优先级）。
+# ⚠️ 用 `**/` 前缀：我们的 pom 在 business-service/ 下，不是仓库根。
+!**/mvnw
+!**/mvnw.cmd
+!**/.mvn/wrapper/maven-wrapper.jar
+!**/.mvn/wrapper/maven-wrapper.properties
+
+# ---- 2.3 Gradle（本项目不用，兜底）----
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+
+
+# ============================================================
+# 第 3 段 · 子系统 ② web/（Vue 3 + Vite + TypeScript, pnpm）
+# ============================================================
+
+# ---- 3.1 依赖 ----
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+
+# ---- 3.2 构建与缓存 ----
+.vite/
+.turbo/
+.parcel-cache/
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+
+# ---- 3.3 其他前端框架产物（本项目用 Vite，兜底）----
+.next/
+.nuxt/
+
+# ---- 3.4 包管理器日志 ----
+yarn-error.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+
+# ============================================================
+# 第 4 段 · 模型 / 数据 / 实验产物（本项目重点防线）
+# ============================================================
+# 权重与数据集**只应存在于服务器**（docs/服务器运维手册.md §12.4），
+# 但这条防线必须留 —— 一次误提交就是几个 GB，且无法简单回滚。
+
+# ---- 4.1 模型权重与序列化对象（按扩展名全局挡）----
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+*.bin
+*.onnx
+*.gguf
+*.h5
+*.msgpack
+*.joblib
+*.pkl
+*.pickle
+*.npy
+*.npz
+*.index
+*.faiss
+
+# ---- 4.2 数据 / 输出目录 ----
+# ⚠️ **加了前导 `/`，锚定仓库根**。不加的话会把 `web/src/data/` 这类
+#    正常源码目录一起挡掉 —— 这是最容易踩的坑，改动前先想清楚。
+/data/
+/models/
+/datasets/
+/checkpoints/
+/outputs/
+
+# ---- 4.3 训练与实验记录 ----
+runs/
+wandb/
+mlruns/
+mlartifacts/
+lightning_logs/
+tensorboard/
+events.out.tfevents.*
+
+# ---- 4.4 模型缓存 ----
+.cache/
+huggingface/
+hf_cache/
+.ollama/
+
+
+# ============================================================
+# 第 5 段 · 部署 deploy/
+# ============================================================
+# ⚠️ **不要**忽略 Dockerfile / docker-compose.yml / .dockerignore
+#    —— 那些是「定义」，必须入库。这里只挡运行时产物。
+docker-compose.override.yml
+.env.docker
+*.tar
+*.tgz
+
+
+# ============================================================
+# 第 6 段 · 仓库级（Harness 状态 / docs / 参照物 / 笔记）
+# ============================================================
+
+# ---- 6.1 Harness 本地状态 ----
+# 一次性交接草稿（见 docs/harness机制.md §6.3 规则 3）
+handoff-*.md
+scope-brief.md
+
+# 临时 / 草稿
+tmp/
+scratch/
+*.tmp
+*.bak
+*.orig
+*.rej
+
+# 证据文件：只留占位，实际证据本地留存（此条可按需改回入库）
+evidence/*
+!evidence/.gitkeep
+
+# Claude Code 本地运行时（settings.json 与 hooks/ 要入库，只有本地态不入库）
+.claude/settings.local.json
+.claude/hooks/*.log
+.claude/projects/
+.claude/todos/
+
+# ---- 6.2 docs/：★ 整个目录都不入库 ----
+# 用户 2026-09-10 决定：**docs/ 全部私有**（此前只私有其中两份，现已扩大）。
+#
+# 这个目录里放什么（一律不入库）：
+#   · 核心宗旨.md           —— 个人纲领
+#   · 服务器运维手册.md      —— 含服务器链路信息
+#   · harness机制*.md       —— 运行规格 + 通用 SOP
+#   · 任务清单-粗粒度.md     —— 外层进度
+#   · 进度/                 —— 内层进度（某个模块的细粒度步骤）
+#   · 计划/                 —— ★ AI 技能（superpowers 等）生成的 plan / 实施计划
+#
+# ⚠️ **用整目录忽略 `docs/`，不要再加任何 `!docs/xxx` 放行** ——
+#    一行放行就会让那个文件上 GitHub，而这份 .gitignore 的意图是「全私有」。
+#    （早期版本用 `docs/*` + 白名单放过 harness 文档，已废弃。）
+# ⚠️ 代价：服务器 `git pull` 拿不到这些文档。服务器只跑代码，可接受。
+docs/
+
+# ---- 6.3 qwenpaw-project/：只读参照答案，绝不上传 ----
+# 完整上游项目（含 console/website/多语言 README），体积大且非我方代码。
+# 见 docs/核心宗旨.md §5.1。
+qwenpaw-project/
+
+# ---- 6.5 ★ 提交防线的项目专属黑名单：绝不入库 ----
+# .githooks/pre-commit 本身是**入库的（公开的）**，所以它只能放通用规则
+# （凭据格式、IP）。项目专属的词（主机别名 / 用户名 / GPU 型号 / 路径前缀）
+# 放在这个文件里 —— 写进 pre-commit 就等于一边拦它一边公开它。
+.githooks/blocklist.local
+
+# ---- 6.4 learning-notes/ 与 assets/：★ 都要入库 ----
+# 这两个目录**故意不设「整目录忽略」规则** —— 没规则 = 全入库。
+# 写在这里是为了防止以后有人「顺手加一条」把它们挡掉。
+#
+#   learning-notes/  ★ 本项目真正的产物：每一步的学习笔记
+#   assets/          笔记里引用的图片（不入库的话，笔记里的图全挂）
+#
+# 只挡掉这两个目录下的临时草稿：
+learning-notes/**/*.draft.md
+assets/**/*.draft.*
+

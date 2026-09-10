@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# ============================================================
+# pre-commit 防线 —— 阻止服务器信息 / 密钥进入仓库
+# 落实硬约束：E2（密钥不入库）+ E11（服务器标识不入库）
+# ============================================================
+# 为什么需要它：
+#   E2 / E11 原本只写在 AGENTS.md 里（**防线 2 · 文件层**）。
+#   但「别把密钥提交上去」这类事，光靠自觉**一定会出事** ——
+#   一次 `git add -A` 就漏了。所以补上**防线 3 · 系统强制**。
+#
+# 安装（克隆仓库后跑一次）：
+#     git config core.hooksPath .githooks
+# 检查是否已生效：
+#     git config core.hooksPath        # 应输出 .githooks
+# 临时跳过（**别用**，除非你百分百确定）：
+#     git commit --no-verify
+#
+# 扫描对象：**本次 staged 的内容**（不是整个工作区），
+#   所以 docs/服务器运维手册.md 这类未入库文件不会被误报。
+#
+# ------------------------------------------------------------
+# ★ 规则分两层，因为**本文件是入库的（公开的）**
+# ------------------------------------------------------------
+# 踩过的坑：v1 把项目专属黑名单（主机别名、用户名、GPU 型号）直接写在本文件里，
+#   结果**本文件一入库，就把它要保护的那些词公开了** ——
+#   「要拦住某个主机别名，就得先把它写下来」。
+#   （连复盘这句话本身都差点再犯一次：初稿里直接引用了那个真实别名当例子。）
+#
+#   → 所以现在分两层：
+#     ① 通用规则（凭据格式、IP）写在下面，可公开，写死在本文件；
+#     ② 项目专属规则（主机别名 / 用户名 / GPU 型号 / 服务器路径前缀）
+#        放在 `.githooks/blocklist.local`，**该文件已 gitignore，绝不入库**。
+#
+#   `.githooks/blocklist.local` 格式：一行一个正则片段，`#` 开头是注释。
+#       （示例用假词，别在这里写真值 —— 本文件是公开的）
+#       host-alias-xxx
+#       username-xxx
+#       (^|[^A-Za-z0-9_-])(gpu-model-xxx)
+#       /some/private/path-prefix
+#
+#   ⚠️ 没有这个文件也能工作（只用通用规则），只是会漏掉项目专属的词。
+#      换机器 / 重克隆后记得把它补上（内容见 docs/服务器运维手册.md）。
+# ============================================================
+
+set -e
+
+# ---- ① 通用规则（可公开）----
+# ⚠️ GPU 型号那类不能用 `\b型号\b`：`.gitignore` 里有 `.Spotlight-V100`，
+#    词尾边界会命中它，于是**改一次 .gitignore 就被误拦一次**。
+#    必须用 `(^|[^A-Za-z0-9_-])型号`。
+GENERIC='(sk-[A-Za-z0-9_-]{16,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|BEGIN [A-Z ]*PRIVATE KEY|xox[baprs]-[A-Za-z0-9-]{10,}|\b([0-9]{1,3}\.){3}[0-9]{1,3}\b)'
+
+# 放行例外：回环 / 未指定地址（E10 要求显式写 127.0.0.1）
+ALLOW='127\.0\.0\.1|0\.0\.0\.0|255\.255\.255\.255'
+
+# ---- ② 项目专属规则（从本地文件读，不入库）----
+BLOCKLIST="$(dirname "$0")/blocklist.local"
+PROJECT=""
+if [ -f "$BLOCKLIST" ]; then
+  # 去掉注释与空行，用 | 连成一条正则
+  PROJECT=$(grep -vE '^\s*(#|$)' "$BLOCKLIST" 2>/dev/null | paste -sd'|' - || true)
+fi
+
+if [ -n "$PROJECT" ]; then
+  COMBINED="($GENERIC|$PROJECT)"
+else
+  COMBINED="$GENERIC"
+fi
+
+files=$(git diff --cached --name-only --diff-filter=ACM)
+
+[ -z "$files" ] && exit 0
+
+fail=0
+
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+
+  # 本 hook 自身含有上面的通用正则字面量，会自己命中自己 —— 跳过。
+  # （项目专属词已移出本文件，所以跳过它是安全的。）
+  case "$f" in
+    .githooks/*) continue ;;
+  esac
+
+  # 二进制文件跳过。
+  # ⚠️ 别用 `case "$content" in *$'\0'*)` 这种写法 —— bash 变量**存不下 NUL**，
+  #    `$'\0'` 会退化成空串，模式变成 `**`，结果是**每个文件都被跳过、
+  #    hook 永远放行**。一个总是说 OK 的护栏比没有护栏更危险。
+  #    用 numstat：二进制显示的增删行数是 `-`。
+  if [ "$(git diff --cached --numstat -- "$f" | cut -f1)" = "-" ]; then
+    continue
+  fi
+
+  # 取「已暂存」的内容（不是工作区内容）。`</dev/null` 防止 git 抢 stdin。
+  content=$(git show ":$f" </dev/null 2>/dev/null) || continue
+
+  hits=$(printf '%s\n' "$content" | grep -nE "$COMBINED" | grep -vE "$ALLOW" || true)
+
+  if [ -n "$hits" ]; then
+    while IFS= read -r h; do
+      echo "  ❌ E2/E11 拦截  $f:$h"
+    done <<< "$hits"
+    fail=1
+  fi
+done <<< "$files"
+
+if [ "$fail" -ne 0 ]; then
+  cat >&2 <<'EOF'
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚫 提交被拦下：检测到服务器标识信息或凭据。
+
+为什么拦：这些信息一旦进 Git，**就永久留在历史里了** ——
+删掉文件再提交也删不掉历史，得改写历史 + 强推，代价很大。
+
+怎么改：
+  · 服务器标识（主机别名 / IP / 绝对路径 / GPU 型号 / 端口 / 用户名）
+      → 换成占位符，真值写进 docs/服务器运维手册.md（该文件不入库）
+  · 密钥
+      → 写进 .env（已被 .gitignore 挡住），仓库里只留 .env.example
+
+规则出处：AGENTS.md §1.2 的 E2 / E11
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EOF
+  exit 1
+fi
+
+exit 0

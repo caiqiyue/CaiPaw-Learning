@@ -1,0 +1,159 @@
+# ============================================================
+# CaiPaw-Learning — .gitattributes
+# ============================================================
+# 目的：统一换行符 + 标注二进制文件，解决两个具体问题——
+#   1. 本项目按《服务器运维手册.md》§4 的链路在
+#      Windows 本地 ↔ GitHub ↔ Linux 服务器 三端流转。
+#      Windows 默认 CRLF、Linux 默认 LF，不锁死会导致
+#      「本地没改任何内容，服务器 git status 却整文件变化」。
+#   2. 模型权重 / 压缩包必须标成二进制，否则 Git 会尝试做
+#      行尾转换和文本 diff，既慢又可能损坏文件。
+#
+# 权威运行环境是服务器（Linux），所以默认值取 LF。
+#
+# 规则匹配顺序 = 文件顺序，后面的覆盖前面的。
+# 因此二进制段必须放在文件末尾。
+# ============================================================
+
+
+# ---- 1. 默认：文本文件统一 LF ----
+# text=auto 让 Git 自行判定文本/二进制，判定为文本者一律转 LF。
+* text=auto eol=lf
+
+
+# ---- 2. 文本格式（显式声明，不依赖自动判定）----
+# 文档
+*.md        text eol=lf
+*.markdown  text eol=lf
+*.rst       text eol=lf
+*.txt       text eol=lf
+
+# 数据 / 配置
+*.json      text eol=lf
+*.jsonl     text eol=lf
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.toml      text eol=lf
+*.ini       text eol=lf
+*.cfg       text eol=lf
+*.conf      text eol=lf
+*.csv       text eol=lf
+*.tsv       text eol=lf
+*.xml       text eol=lf
+*.sql       text eol=lf
+
+# Python
+*.py        text eol=lf
+*.pyi       text eol=lf
+*.ipynb     text eol=lf
+*.sh        text eol=lf
+*.bash      text eol=lf
+*.zsh       text eol=lf
+
+# 前端
+*.ts        text eol=lf
+*.tsx       text eol=lf
+*.js        text eol=lf
+*.jsx       text eol=lf
+*.mjs       text eol=lf
+*.cjs       text eol=lf
+*.vue       text eol=lf
+*.css       text eol=lf
+*.scss      text eol=lf
+*.less      text eol=lf
+*.html      text eol=lf
+
+# Git 自身的配置文件
+.gitignore     text eol=lf
+.gitattributes text eol=lf
+.dockerignore  text eol=lf
+Dockerfile     text eol=lf
+*.env          text eol=lf
+
+
+# ---- 3. Windows 脚本：必须 CRLF ----
+# cmd.exe / PowerShell 对 LF-only 脚本解析异常，这里显式覆盖第 1 条的默认值。
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+
+# ---- 3.5 ★ 无扩展名的脚本（Git 认不出来，必须显式声明）----
+# ⚠️ 这条容易漏：Maven / Gradle 的 launcher 没有后缀名，Git 会当成普通文本
+#    按宿主的 core.autocrlf 处理。在 Windows 上 checkout 成 CRLF 之后，
+#    拿到 Linux 服务器执行会直接报 `bad interpreter: ...^M`。
+#    `mvnw` 是 sh 脚本 → 必须 LF；`mvnw.cmd` 是批处理 → 必须 CRLF。
+mvnw         text eol=lf
+gradlew      text eol=lf
+mvnw.cmd     text eol=crlf
+gradlew.bat  text eol=crlf
+
+
+# ---- 4. 二进制：禁止行尾转换 / diff / merge ----
+# `binary` 是 Git 内置宏，等价于 `-text -diff -merge`。
+
+# 图片 / 媒体
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.bmp   binary
+*.tiff  binary
+*.webp  binary
+*.ico   binary
+*.svg   text eol=lf
+*.mp3   binary
+*.mp4   binary
+*.wav   binary
+*.mov   binary
+
+# 文档（二进制格式）
+*.pdf   binary
+*.docx  binary
+*.xlsx  binary
+*.pptx  binary
+
+# 模型权重与序列化对象（见 .gitignore §6 —— 正常不入库，此处是兜底）
+*.safetensors binary
+*.ckpt    binary
+*.pt      binary
+*.pth     binary
+*.bin     binary
+*.onnx    binary
+*.gguf    binary
+*.h5      binary
+*.msgpack binary
+*.joblib  binary
+*.pkl     binary
+*.pickle  binary
+*.npy     binary
+*.npz     binary
+*.index   binary
+*.faiss   binary
+*.model   binary
+
+# 压缩包
+*.zip   binary
+*.tar   binary
+*.gz    binary
+*.tgz   binary
+*.bz2   binary
+*.xz    binary
+*.7z    binary
+*.rar   binary
+
+# 可执行 / 库文件
+*.exe   binary
+*.dll   binary
+*.so    binary
+*.dylib binary
+*.jar   binary
+*.class binary
+*.wasm  binary
+
+
+# ---- 5. GitHub Linguist（可选，注释掉按需启用）----
+# 让语言统计忽略生成物，避免仓库语言占比失真。
+# pnpm-lock.yaml   linguist-generated=true
+# uv.lock          linguist-generated=true
+# poetry.lock      linguist-generated=true
