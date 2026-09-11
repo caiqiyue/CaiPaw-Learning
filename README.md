@@ -149,7 +149,7 @@ CaiPaw-Learning/
 |---|---|
 | 这个项目到底要干嘛、为什么这么干 | `docs/核心宗旨.md` |
 | **下一步做什么** | `docs/任务清单-粗粒度.md` + `feature_list.json` |
-| 规则和纪律（L1~L6 学习纪律） | `AGENTS.md` |
+| 规则和纪律（**L1~L7** 学习纪律） | `AGENTS.md` |
 | harness 怎么搭的、怎么运转 | `docs/harness机制_CaiPaw-Learning.md` |
 | 每一步学到了什么 | `learning-notes/` |
 | 服务器怎么连、怎么部署 | `docs/服务器运维手册.md` |

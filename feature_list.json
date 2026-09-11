@@ -25,7 +25,7 @@
     ],
     "verification_写法": "3~6 步，每步是可复制粘贴执行的命令或可肉眼观察的现象。不要写「测试通过」这种不可执行的描述。",
     "note_命名": "learning-notes/step-NNN-<slug>.md，NNN 全局三位连续递增，跨任务不重新计数。",
-    "硬约束": "见 AGENTS.md §1（学习纪律 L1~L6 + 工程纪律 E1~E11）。规则冲突时以 AGENTS.md 为准。"
+    "硬约束": "见 AGENTS.md §1（学习纪律 L1~L7 + 工程纪律 E1~E11）。规则冲突时以 AGENTS.md 为准。"
   },
 
   "milestone": {
@@ -44,7 +44,7 @@
       "title": "调通第一次 LLM 调用",
       "status": "pending",
       "user_visible_behavior": "运行脚本后，终端打印出模型返回的一段文本",
-      "qwenpaw_reference": "Model / Formatter（先读这个再动手，见 L6）",
+      "qwenpaw_reference": "Model / Formatter（拆步骤前精读 L7，写代码前对细节 L6）",
       "verification": [
         "在 agent-service/ 下运行 python -m agent.demo --ask '你好'",
         "终端打印出模型返回的一段文本（非空、非报错栈）",
