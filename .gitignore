@@ -278,11 +278,16 @@ evidence/*
 #   · 进度/                 —— 内层进度（某个模块的细粒度步骤）
 #   · 计划/                 —— ★ AI 技能（superpowers 等）生成的 plan / 实施计划
 #
-# ⚠️ **用整目录忽略 `docs/`，不要再加任何 `!docs/xxx` 放行** ——
+# ⚠️ **用整目录忽略，不要再加任何 `!docs/xxx` 放行** ——
 #    一行放行就会让那个文件上 GitHub，而这份 .gitignore 的意图是「全私有」。
 #    （早期版本用 `docs/*` + 白名单放过 harness 文档，已废弃。）
+#
+# ⚠️ **必须带前导 `/` 锚定仓库根**。写成 `docs/` 会匹配**任意层级**的 docs/ ——
+#    将来 `agent-service/docs/`、`web/docs/` 会被**静默忽略**，而且没人会发现。
+#    （踩过：初版没加斜杠，被审核用一个 `mkdir agent-service/docs` 试出来了。）
+#
 # ⚠️ 代价：服务器 `git pull` 拿不到这些文档。服务器只跑代码，可接受。
-docs/
+/docs/
 
 # ---- 6.3 qwenpaw-project/：只读参照答案，绝不上传 ----
 # 完整上游项目（含 console/website/多语言 README），体积大且非我方代码。

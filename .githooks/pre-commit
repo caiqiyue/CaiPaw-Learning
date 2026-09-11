@@ -76,10 +76,15 @@ fail=0
 while IFS= read -r f; do
   [ -z "$f" ] && continue
 
-  # 本 hook 自身含有上面的通用正则字面量，会自己命中自己 —— 跳过。
-  # （项目专属词已移出本文件，所以跳过它是安全的。）
+  # 本 hook 自身含有上面的通用正则字面量，会自己命中自己 —— 跳过**它自己**。
+  #
+  # ⚠️ 只豁免这一个文件，**不要写成 `.githooks/*`** ——
+  #    那会把整个目录放过，包括 `.githooks/blocklist.local`
+  #    （就是那个装着主机别名 / 用户名 / GPU 型号的文件）。
+  #    `git add -f .githooks/blocklist.local` 会毫无阻拦地提交上去。
+  #    （踩过：初版写的正是 `.githooks/*`，被审核用一个 `git add -f` 试出来了。）
   case "$f" in
-    .githooks/*) continue ;;
+    .githooks/pre-commit) continue ;;
   esac
 
   # 二进制文件跳过。

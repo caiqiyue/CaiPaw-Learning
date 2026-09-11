@@ -41,8 +41,8 @@ bash init.sh                         # 应打印「还没有任何子系统目�
 ```
 
 - **`.env`** 已配好 API key，**不入库**；模板是 `.env.example`
-- **conda env**：`caipaw-agent`（`D:\anconda\envs\caipaw-agent`），独立环境，
-  不与 `gpt-learning` / `langchain_learning` 混用
+- **conda env**：`caipaw-agent`（独立环境，不与 `gpt-learning` / `langchain_learning` 混用）
+  —— 位置用 `conda env list` 查（**别把绝对路径写进任何入库文件**，E11）
 
 **装好时的实际版本**（2026-09-10 实测，`pip install -r requirements-dev.txt`）：
 
@@ -155,7 +155,7 @@ git config core.hooksPath .githooks
 
 ## 八、完整背景（想深挖时看）
 
-见 `claude-progress.md` 的 `## Session Log`：七轮改动全记录，包括——
+见 `claude-progress.md` 的 `## Session Log`：**九轮**改动全记录，包括——
 
 - **踩过的坑**：① 一个「护栏永远放行」的严重 bug（`case ... in *$'\0'*)` 写法错误）；
   ② 「部分私有」的中间地带如何埋雷；③ **护栏本身泄漏了它要保护的东西**；
